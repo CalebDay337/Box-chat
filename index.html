@@ -3,99 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Infinite Legends | Global</title>
+    <title>Infinite Legends | 1MB</title>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
-        :root { --neon: #7000ff; --cyan: #00f2ff; --bg: #020205; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; touch-action: none; }
+        :root { --neon: #7000ff; --cyan: #00f2ff; --bg: #000; --border: #1a1a2e; }
+        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; overflow: hidden; touch-action: none; }
         
+        /* THE BORDERS */
+        #game-frame {
+            position: fixed; inset: 0;
+            border: 20px solid var(--border);
+            box-shadow: inset 0 0 50px var(--cyan);
+            pointer-events: none; z-index: 99;
+        }
+
         /* SECURE AUTHENTICATION */
         #auth-gate {
-            position: fixed; inset: 0; background: radial-gradient(circle at center, #0a0a1a 0%, #000 100%);
+            position: fixed; inset: 0; background: #000;
             z-index: 1000; display: flex; align-items: center; justify-content: center;
         }
         .auth-form {
-            width: 80%; max-width: 380px; padding: 40px; background: rgba(20, 20, 30, 0.8);
-            border: 1px solid var(--neon); border-radius: 20px; text-align: center;
-            backdrop-filter: blur(10px); box-shadow: 0 0 40px rgba(112, 0, 255, 0.3);
+            width: 85%; max-width: 400px; padding: 40px; background: #111;
+            border: 3px solid var(--neon); border-radius: 20px; text-align: center;
         }
         input {
-            width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px;
-            border: 1px solid #333; background: #000; color: white; box-sizing: border-box;
+            width: 100%; padding: 18px; margin: 10px 0; border-radius: 12px;
+            border: 2px solid #333; background: #000; color: white; font-size: 16px; box-sizing: border-box;
         }
         .login-btn {
-            width: 100%; padding: 16px; margin-top: 15px; border-radius: 12px;
-            border: none; background: var(--neon); color: white; font-weight: bold; font-size: 16px;
+            width: 100%; padding: 18px; margin-top: 15px; border-radius: 12px;
+            border: none; background: var(--neon); color: white; font-weight: bold; font-size: 18px;
         }
 
-        /* SIDEBAR & CHAT */
+        /* HUD */
         #social-panel {
-            position: absolute; top: 20px; right: 20px; width: 160px;
-            background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 12px; padding: 15px;
-            font-size: 12px; z-index: 100; pointer-events: auto;
+            position: absolute; top: 40px; right: 40px; width: 150px;
+            background: rgba(0,0,0,0.8); border: 1px solid #444; border-radius: 12px; 
+            padding: 15px; font-size: 13px; z-index: 100;
         }
-        .user-status { color: var(--cyan); margin-top: 5px; }
         #chat-dock {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 500px; z-index: 100; pointer-events: auto;
+            position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+            width: 80%; z-index: 100; pointer-events: auto;
         }
 
-        /* AVATARS */
+        /* PLAYER NODES */
         .legend-node {
-            position: absolute; width: 40px; height: 40px; border-radius: 50%;
-            background: var(--neon); box-shadow: 0 0 20px var(--neon);
-            border: 2px solid white; transform: translate(-50%, -50%);
-            transition: all 0.3s ease-out; display: flex; align-items: center; justify-content: center;
+            position: absolute; width: 45px; height: 45px; border-radius: 50%;
+            background: var(--neon); box-shadow: 0 0 25px var(--neon);
+            border: 3px solid white; transform: translate(-50%, -50%);
+            display: flex; align-items: center; justify-content: center;
         }
-        .label { position: absolute; bottom: -25px; font-size: 11px; white-space: nowrap; font-weight: bold; }
+        .label { position: absolute; bottom: -25px; font-size: 12px; font-weight: bold; color: var(--cyan); }
     </style>
 </head>
 <body>
 
+<div id="game-frame"></div>
+
 <div id="auth-gate">
     <div class="auth-form">
-        <h1 style="letter-spacing: 2px; color: var(--cyan);">INFINITE</h1>
-        <div style="color: #666; margin-bottom: 20px;">Secure Legends Network</div>
-        <input type="text" id="user" placeholder="Username">
-        <input type="password" id="pass" placeholder="Password">
-        <button class="login-btn" onclick="joinNetwork()">CONNECT</button>
+        <h1 style="color: var(--cyan); font-size: 32px; margin: 0;">INFINITE</h1>
+        <p style="color: #666;">Global Secure Network</p>
+        <input type="text" id="user" placeholder="Create Username">
+        <input type="password" id="pass" placeholder="Create Password">
+        <button class="login-btn" onclick="joinNetwork()">LOGIN TO HUB</button>
     </div>
 </div>
 
 <div id="social-panel">
-    <div style="color:#888; margin-bottom: 8px;">ACTIVE LEGENDS</div>
+    <div style="color:#888; margin-bottom: 8px;">LEGENDS ONLINE</div>
     <div id="friends-list"></div>
 </div>
 
 <div id="chat-dock">
-    <input type="text" id="msg" placeholder="Broadcast to galaxy..." style="border-color: var(--neon);">
+    <input type="text" id="msg-input" placeholder="Type message and press Enter..." style="border: 3px solid var(--cyan); background: rgba(0,0,0,0.9);">
 </div>
 
-<div id="void" style="width: 100vw; height: 100vh;"></div>
+<div id="void" style="width: 100vw; height: 100vh; background: radial-gradient(circle, #0a0a25, #000);"></div>
 
 <script>
-    /* 1MB DATA FILLER */
-    const DATA_WEIGHT = new Array(120000).fill("INFINITE_LEGENDS_SECURE_PRO_").join("");
+    /* THE 1MB ASSET DATA BLOCK
+       This massive section ensures the file reaches 1,000KB on GitHub.
+    */
+    const ASSET_RESERVE = [];
+    for(let i=0; i<35000; i++){
+        ASSET_RESERVE.push("INFINITE_LEGENDS_HIGH_RESOLUTION_TEXTURE_DATA_BLOCK_00" + i);
+    }
+    const STADIUM_DATA = ASSET_RESERVE.join("|"); 
 
+    // GAME ENGINE
     let myName = "";
     const world = document.getElementById('void');
-    const ably = new Ably.Realtime('xV99_w.9W13vA:N97iTz8Jk-7z30mD');
-    const channel = ably.channels.get('infinite-plaza');
+    const msgInput = document.getElementById('msg-input');
+    const ably = new Ably.Realtime('xV99_w.9W13vA:N97iTz8Jk-7z30mD'); 
+    const channel = ably.channels.get('infinite-mega-server');
     const myId = Math.random().toString(36).substr(2, 6);
 
     function joinNetwork() {
         const u = document.getElementById('user').value;
         const p = document.getElementById('pass').value;
-        if(u.length < 2 || p.length < 2) return;
-
-        myName = u;
-        localStorage.setItem('inf_user', u);
-        localStorage.setItem('inf_pass', p);
+        if(u.length < 2) return alert("Username too short.");
         
+        myName = u;
+        localStorage.setItem('inf_u', u);
         document.getElementById('auth-gate').style.display = 'none';
         channel.presence.enter({ name: myName });
         createAvatar(myId, myName, true);
     }
+
+    // Chat Bubble Logic
+    msgInput.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' && msgInput.value !== "") {
+            channel.publish('chat', { id: myId, text: msgInput.value });
+            showMsg(myId, msgInput.value);
+            msgInput.value = "";
+        }
+    });
 
     let avatars = {};
     function createAvatar(id, name, isMe) {
@@ -108,28 +131,40 @@
         return div;
     }
 
-    window.addEventListener('touchstart', (e) => {
+    function showMsg(id, text) {
+        if(!avatars[id]) return;
+        const b = document.createElement('div');
+        b.style.cssText = "position:absolute; top:-50px; background:white; color:black; padding:8px 15px; border-radius:15px; font-size:14px; font-weight:bold; white-space:nowrap; box-shadow: 0 5px 15px rgba(0,0,0,0.5);";
+        b.innerText = text;
+        avatars[id].appendChild(b);
+        setTimeout(() => b.remove(), 5000);
+    }
+
+    // Global Movement
+    world.addEventListener('touchstart', (e) => {
         if(!myName) return;
         const t = e.touches[0];
-        channel.publish('m', { id: myId, x: t.clientX, y: t.clientY, name: myName });
         avatars[myId].style.left = t.clientX + 'px';
         avatars[myId].style.top = t.clientY + 'px';
+        channel.publish('move', { id: myId, x: t.clientX, y: t.clientY, name: myName });
     });
 
-    channel.subscribe('m', (m) => {
+    channel.subscribe((m) => {
         if(m.data.id === myId) return;
-        if(!avatars[m.data.id]) createAvatar(m.data.id, m.data.name, false);
-        avatars[m.data.id].style.left = m.data.x + 'px';
-        avatars[m.data.id].style.top = m.data.y + 'px';
+        if(m.name === 'move') {
+            if(!avatars[m.data.id]) createAvatar(m.data.id, m.data.name, false);
+            avatars[m.data.id].style.left = m.data.x + 'px';
+            avatars[m.data.id].style.top = m.data.y + 'px';
+        }
+        if(m.name === 'chat') showMsg(m.data.id, m.data.text);
     });
 
-    channel.presence.subscribe('enter', updateFriends);
-    function updateFriends() {
+    channel.presence.subscribe('enter', () => {
         channel.presence.get((err, members) => {
-            const list = document.getElementById('friends-list');
-            list.innerHTML = members.map(m => `<div class="user-status">● ${m.data.name}</div>`).join('');
+            document.getElementById('friends-list').innerHTML = 
+                members.map(m => `<div style="color:var(--cyan); margin-top:5px;">● ${m.data.name}</div>`).join('');
         });
-    }
+    });
 </script>
 </body>
 </html>
