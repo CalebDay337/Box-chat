@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Football Legends: World Chat</title>
+    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <style>
+        body { margin: 0; background: #222; color: white; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #2e7d32; }
+        #chat-ui { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; z-index: 10; }
+        input { width: 70%; padding: 12px; border-radius: 20px; border: none; }
+        button { width: 25%; padding: 12px; border-radius: 20px; background: #ffd700; border: none; font-weight: bold; }
+        .player-label { position: absolute; transform: translate(-50%, -100%); background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 10px; font-size: 12px; pointer-events: none; white-space: nowrap; }
+        .character { position: absolute; width: 30px; height: 30px; background: #2196f3; border-radius: 50%; border: 2px solid gold; transform: translate(-50%, -50%); transition: all 0.2s linear; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    </div>
+
+<div id="chat-ui">
+    <input type="text" id="msg" placeholder="Chat with the world...">
+    <button onclick="sendChat()">SEND</button>
+</div>
+
+<script>
+    // Connection to the Global Server
+    // Replace 'REPLACE_WITH_YOUR_API_KEY' with a real Ably key for a production game
+    const ably = new Ably.Realtime('xV99_w.9W13vA:N97iTz8Jk-7z30mD'); 
+    const channel = ably.channels.get('global-football');
+    
+    const myId = Math.random().toString(36).substring(7);
+    const gameContainer = document.getElementById('game-container');
+    const players = {};
+
+    // 1. CREATE MY CHARACTER
+    const myAvatar = document.createElement('div');
+    myAvatar.className = 'character';
+    myAvatar.style.background = '#ffd700'; // I am Gold
+    gameContainer.appendChild(myAvatar);
+
+    // 2. MOVE ON TOUCH
+    window.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        movePlayer(touch.clientX, touch.clientY);
+    });
+
+    function movePlayer(x, y) {
+        myAvatar.style.left = x + 'px';
+        myAvatar.style.top = y + 'px';
+        // Broadcast position to the world
+        channel.publish('move', { id: myId, x, y });
+    }
+
+    // 3. SEND CHAT
+    function sendChat() {
+        const input = document.getElementById('msg');
+        if (input.value) {
+            channel.publish('chat', { id: myId, msg: input.value });
+            showBubble(myId, input.value, true);
+            input.value = '';
+        }
+    }
+
+    // 4. RECEIVE DATA FROM OTHERS
+    channel.subscribe((message) => {
+        if (message.data.id === myId) return; // Ignore my own messages
+
+        if (message.name === 'move') {
+            updateOtherPlayer(message.data);
+        } else if (message.name === 'chat') {
+            showBubble(message.data.id, message.data.msg, false);
+        }
+    });
+
+    function updateOtherPlayer(data) {
+        if (!players[data.id]) {
+            const el = document.createElement('div');
+            el.className = 'character';
+            gameContainer.appendChild(el);
+            players[data.id] = el;
+        }
+        players[data.id].style.left = data.x + 'px';
+        players[data.id].style.top = data.y + 'px';
+    }
+
+    function showBubble(id, text, isMe) {
+        const target = isMe ? myAvatar : players[id];
+        if (!target) return;
+
+        const oldBubble = target.querySelector('.player-label');
+        if (oldBubble) oldBubble.remove();
+
+        const bubble = document.createElement('div');
+        bubble.className = 'player-label';
+        bubble.innerText = text;
+        target.appendChild(bubble);
+
+        setTimeout(() => bubble.remove(), 4000);
+    }
+</script>
+
+</body>
+</html>
