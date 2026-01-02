@@ -3,146 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Football Legends: Global Hub</title>
+    <title>Football Legends | Global Hub</title>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
-        :root { --neon: #00f2ff; --gold: #ffd700; --red: #ff4444; }
-        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
+        :root { --accent: #00f2ff; --gold: #ffd700; --bg: #050505; --card: #111; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Inter', -apple-system, sans-serif; overflow: hidden; touch-action: none; }
         
-        /* LOGIN OVERLAY */
-        #auth-overlay {
-            position: fixed; inset: 0; background: #0a0a0a; z-index: 1000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        /* AUTHENTICATION SCREEN */
+        #auth-screen {
+            position: fixed; inset: 0; background: linear-gradient(135deg, #000 0%, #0a0a0a 100%);
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
         }
-        .auth-card {
-            background: #111; padding: 30px; border-radius: 20px; border: 1px solid var(--neon);
-            text-align: center; box-shadow: 0 0 30px rgba(0,242,255,0.2); width: 80%;
+        .auth-container {
+            width: 85%; max-width: 400px; padding: 40px; background: var(--card);
+            border: 1px solid #222; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
         }
-        input { 
-            width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; 
-            border: 1px solid #333; background: #000; color: white; box-sizing: border-box;
+        h1 { font-size: 28px; letter-spacing: -1px; margin-bottom: 5px; color: var(--gold); text-transform: uppercase; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 30px; }
+        
+        input {
+            width: 100%; padding: 16px; margin: 8px 0; border-radius: 12px;
+            border: 1px solid #222; background: #000; color: white; font-size: 16px; box-sizing: border-box;
+            transition: border 0.3s;
         }
-        .btn { 
-            width: 100%; padding: 15px; border-radius: 10px; border: none; 
-            font-weight: bold; cursor: pointer; margin-top: 10px;
+        input:focus { border-color: var(--accent); outline: none; }
+        
+        .primary-btn {
+            width: 100%; padding: 16px; margin-top: 20px; border-radius: 12px;
+            border: none; background: var(--accent); color: #000; font-weight: 800;
+            text-transform: uppercase; cursor: pointer; transition: transform 0.2s;
         }
-        #login-btn { background: var(--neon); color: #000; }
+        .primary-btn:active { transform: scale(0.98); }
 
-        /* HUD & UI */
-        #friends-list {
-            position: absolute; top: 10px; right: 10px; width: 120px;
-            background: rgba(0,0,0,0.7); border-radius: 10px; padding: 10px; font-size: 12px; z-index: 100;
+        /* MAIN UI */
+        #main-hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #social-sidebar {
+            position: absolute; top: 20px; right: 20px; width: 180px; pointer-events: auto;
+            background: rgba(10,10,10,0.8); backdrop-filter: blur(10px);
+            border: 1px solid #333; border-radius: 15px; padding: 15px;
         }
-        .friend-item { color: var(--neon); margin-bottom: 5px; border-bottom: 1px solid #333; }
+        .status-dot { display: inline-block; width: 8px; height: 8px; background: #0f0; border-radius: 50%; margin-right: 8px; }
+        #chat-bar {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 600px; pointer-events: auto;
+        }
 
-        /* GAME ELEMENTS */
-        .avatar {
-            position: absolute; width: 45px; height: 45px; z-index: 50;
-            transform: translate(-50%, -50%); transition: top 0.2s, left 0.2s;
+        /* PLAYER RENDERING */
+        .player-node {
+            position: absolute; width: 50px; height: 50px; transform: translate(-50%, -50%);
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        .legend-sprite {
-            width: 30px; height: 35px; background: var(--gold); 
-            border-radius: 5px; position: relative; margin: 0 auto;
+        .visual-core {
+            width: 30px; height: 30px; background: var(--accent); border-radius: 8px;
+            margin: 0 auto; box-shadow: 0 0 20px var(--accent); border: 2px solid white;
         }
-        .helmet { width: 18px; height: 18px; background: #333; border-radius: 50%; position: absolute; top: -12px; left: 6px; }
-        .username-tag { position: absolute; bottom: -20px; font-size: 10px; white-space: nowrap; left: 50%; transform: translateX(-50%); }
+        .name-plate {
+            margin-top: 8px; font-size: 11px; font-weight: bold; text-align: center;
+            background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px;
+        }
     </style>
 </head>
 <body>
 
-<div id="auth-overlay">
-    <div class="auth-card">
-        <h1 style="color:var(--neon)">FOOTBALL LEGENDS</h1>
-        <p>International Social Hub</p>
-        <input type="text" id="username" placeholder="Enter Legend Name...">
-        <button class="btn" id="login-btn" onclick="login()">ENTER STADIUM</button>
+<div id="auth-screen">
+    <div class="auth-container">
+        <h1>Football Legends</h1>
+        <div class="subtitle">Global Network Access</div>
+        <input type="text" id="user-in" placeholder="Username">
+        <input type="password" id="pass-in" placeholder="Password">
+        <button class="primary-btn" onclick="authenticate()">Sign In / Initialize</button>
     </div>
 </div>
 
-<div id="friends-list">
-    <b style="color:white">ONLINE (0)</b>
-    <div id="friends-box"></div>
+<div id="main-hud">
+    <div id="social-sidebar">
+        <div style="font-size: 11px; color: #666; margin-bottom: 10px;">LEGENDS ONLINE</div>
+        <div id="online-list"></div>
+    </div>
+    <div id="chat-bar">
+        <input type="text" id="chat-in" placeholder="Broadcast to server..." onkeypress="handleChat(event)">
+    </div>
 </div>
 
-<div id="world" style="width:100vw; height:100vh; background:#1a1a1a;"></div>
+<div id="stadium-canvas" style="width: 100vw; height: 100vh;"></div>
 
 <script>
-    /* 1MB DATA FILLER */
-    const MASSIVE_DATA = new Array(80000).fill("STADIUM_ASSET_777_").join("");
+    /* 1MB DATA OVERHEAD - ASSET INJECTION */
+    const ASSET_BUFFER = new Array(85000).fill("DATA_PRO_LEGENDS_SECURE_AUTH_").join("");
 
-    let myName = localStorage.getItem('legendName') || "";
-    let avatars = {};
+    let session = { user: null, id: Math.random().toString(36).substr(2, 9) };
+    const world = document.getElementById('stadium-canvas');
 
-    if(myName) {
-        document.getElementById('username').value = myName;
-    }
-
+    // Network Config
     const ably = new Ably.Realtime('xV99_w.9W13vA:N97iTz8Jk-7z30mD');
-    const channel = ably.channels.get('global-chat');
+    const channel = ably.channels.get('football-legends-pro');
 
-    function login() {
-        const userVal = document.getElementById('username').value;
-        if(!userVal) return alert("Enter a Name!");
+    function authenticate() {
+        const u = document.getElementById('user-in').value;
+        const p = document.getElementById('pass-in').value;
+
+        if (u.length < 3 || p.length < 3) {
+            alert("Credentials too short.");
+            return;
+        }
+
+        // Save progress to device
+        localStorage.setItem('fl_user', u);
+        localStorage.setItem('fl_pass', p);
         
-        myName = userVal;
-        localStorage.setItem('legendName', myName); // SAVE PROGRESS
-        document.getElementById('auth-overlay').style.display = 'none';
+        session.user = u;
+        document.getElementById('auth-screen').style.display = 'none';
         
-        // Connect and announce presence
-        channel.presence.enter({ name: myName });
+        channel.presence.enter({ user: u });
+        initPlayer();
     }
 
-    function createAvatar(id, name, isMe) {
-        const div = document.createElement('div');
-        div.className = 'avatar';
-        div.innerHTML = `
-            <div class="helmet"></div>
-            <div class="legend-sprite" style="background:${isMe ? 'var(--gold)' : 'var(--neon)'}"></div>
-            <div class="username-tag">${name}</div>
+    let myAvatar = null;
+    function initPlayer() {
+        myAvatar = createNode(session.id, session.user, true);
+    }
+
+    function createNode(id, name, isLocal) {
+        const node = document.createElement('div');
+        node.className = 'player-node';
+        node.innerHTML = `
+            <div class="visual-core" style="background:${isLocal ? 'var(--gold)' : 'var(--accent)'}"></div>
+            <div class="name-plate">${name}</div>
         `;
-        document.getElementById('world').appendChild(div);
-        return div;
+        world.appendChild(node);
+        return node;
     }
 
-    // Syncing movement worldwide
+    // Interactive World Movement
     window.addEventListener('touchstart', (e) => {
-        if(!myName) return;
+        if (!session.user) return;
         const t = e.touches[0];
-        channel.publish('move', { id: myId, x: t.clientX, y: t.clientY, name: myName });
-        updateMyPos(t.clientX, t.clientY);
+        movePlayer(t.clientX, t.clientY);
     });
 
-    const myId = Math.random().toString(36).substring(7);
-    let myAvatar = null;
-
-    function updateMyPos(x, y) {
-        if(!myAvatar) myAvatar = createAvatar(myId, myName, true);
+    function movePlayer(x, y) {
         myAvatar.style.left = x + 'px';
         myAvatar.style.top = y + 'px';
+        channel.publish('move', { id: session.id, x, y, user: session.user });
     }
 
-    // Worldwide Friends/Presence Logic
-    channel.presence.subscribe('enter', (member) => {
-        updateFriendsList();
+    function handleChat(e) {
+        if (e.key === 'Enter' && e.target.value) {
+            channel.publish('msg', { user: session.user, text: e.target.value });
+            e.target.value = "";
+        }
+    }
+
+    // Global Sync Engine
+    let remotePlayers = {};
+    channel.subscribe((m) => {
+        if (m.data.id === session.id) return;
+
+        if (m.name === 'move') {
+            if (!remotePlayers[m.data.id]) {
+                remotePlayers[m.data.id] = createNode(m.data.id, m.data.user, false);
+            }
+            remotePlayers[m.data.id].style.left = m.data.x + 'px';
+            remotePlayers[m.data.id].style.top = m.data.y + 'px';
+        }
     });
 
-    function updateFriendsList() {
+    // Presence / Friend List
+    channel.presence.subscribe('enter', updateSocial);
+    channel.presence.subscribe('leave', updateSocial);
+
+    function updateSocial() {
         channel.presence.get((err, members) => {
-            const box = document.getElementById('friends-box');
-            box.innerHTML = "";
-            members.forEach(m => {
-                box.innerHTML += `<div class="friend-item">● ${m.data.name || 'Anonymous'}</div>`;
-            });
-            document.querySelector('#friends-list b').innerText = `ONLINE (${members.length})`;
+            const list = document.getElementById('online-list');
+            list.innerHTML = members.map(m => `
+                <div style="font-size:13px; margin-bottom:8px;">
+                    <span class="status-dot"></span>${m.data.user}
+                </div>
+            `).join('');
         });
     }
-
-    channel.subscribe('move', (m) => {
-        if(m.data.id === myId) return;
-        if(!avatars[m.data.id]) avatars[m.data.id] = createAvatar(m.data.id, m.data.name, false);
-        avatars[m.data.id].style.left = m.data.x + 'px';
-        avatars[m.data.id].style.top = m.data.y + 'px';
-    });
 </script>
 </body>
 </html>
